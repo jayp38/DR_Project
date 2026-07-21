@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Group 82 Final Report</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+            line-height: 1.6;
+            margin: 0 auto;
+            max-width: 800px;
+            padding: 2em;
+            color: #333;
+        }
+        h1, h2, h3 {
+            border-bottom: 1px solid #eaecef;
+            padding-bottom: 0.3em;
+            margin-top: 24px;
+            margin-bottom: 16px;
+        }
+        h1 {
+            text-align: center;
+            border-bottom: none;
+            font-size: 2.5em;
+        }
+        h2 {
+            font-size: 1.75em;
+        }
+        h3 {
+            font-size: 1.4em;
+        }
+        a {
+            color: #0366d6;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        ul {
+            padding-left: 20px;
+        }
+        li {
+            margin-bottom: 8px;
+        }
+        code {
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+            background-color: rgba(27,31,35,0.05);
+            padding: .2em .4em;
+            margin: 0;
+            font-size: 85%;
+            border-radius: 3px;
+        }
+        figure {
+            margin: 20px 0;
+        }
+        figcaption {
+            font-style: italic;
+            color: #666;
+            margin-top: 8px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Group 82 Final Report</h1>
+
+    <h2>Introduction/Background</h2>
+    <p>
+        Patients with diabetes may develop diabetic retinopathy (DR), where retinal blood vessels are damaged, potentially causing permanent blindness. Retinal fundus images are scored into five ordered stages for screening: 0–4 (No DR, Mild, Moderate, Severe, Proliferative). Manual scoring is slow, expensive, and inconsistently available, especially in low-resource settings[2]. 
+    </p>
+    <p>
+        Automated DR detection has evolved from hand-crafted features to deep learning[2]. Today, transfer learning with CNNs like ResNet provides human-level accuracy[1]. Current work pushes efficiency with models such as EfficientNet and explores next-generation architectures like Vision Transformers[3].
+    </p>
+
+    <h3>Dataset</h3>
+    <p>
+        <b>Dataset Link:</b> <a href="https://www.kaggle.com/competitions/aptos2019-blindness-detection/data" target="_blank" rel="noopener noreferrer">https://www.kaggle.com/competitions/aptos2019-blindness-detection/data</a>
+    </p>
+    <p>
+        We used the APTOS 2019 Blindness Detection Dataset, which contains over 3,500 high-resolution retinal fundus images. Each image was assessed by a clinician and assigned an integer label from 0 to 4, corresponding to the five stages of DR severity. The dataset is representative of real-world data given the significant class imbalance (substantially more healthy images than diseased ones) and a wide range of image quality (variations in lighting, focus, and artifacts)[3].
+    </p>
+    
+    <h2>Problem Definition</h2>
+    <p>
+        Diabetic Retinopathy is one of the leading causes of vision loss in adults between the ages of 18 and 65 worldwide, but it is largely preventable if detected early[1]. Currently, patients are diagnosed by trained ophthalmologists manually examining retinal images—a process that creates significant bottlenecks. DR screening is restricted by inefficiency and lack of access; many patients cannot attend annual exams due to cost or shortage of specialists, impeding diagnosis and increasing cases of preventable blindness[2].
+    </p>
+    <p>
+        Our goal is to build a cost-effective, reliable, and scalable ML pipeline for early DR triage that can:
+    </p>
+    <ul>
+        <li><b>Increase Accessibility:</b> Deploy in pharmacies, clinics, or mobile health units, enabling patient screening without specialists.</li>
+        <li><b>Improve Speed:</b> Analyze images and provide risk assessments in seconds, allowing immediate feedback and referral.</li>
+        <li><b>Boost Efficiency:</b> Automatically identify healthy eyes or flag high-risk cases, letting ophthalmologists focus on patients who need them most[1].</li>
+    </ul>
+
+    <h2>Methods</h2>
+    <p>
+        We implemented three supervised learning models to classify diabetic retinopathy severity levels, progressing from a custom CNN baseline to transfer learning with pretrained architectures. All implementations were completed in PyTorch and PyTorch Lightning for consistency and reproducibility.
+    </p>
+
+    <h3>Data Preprocessing</h3>
+    <p>
+        Our preprocessing pipeline included multiple methods to standardize inputs and improve model robustness:
+    </p>
+    <ul>
+        <li><b>Intelligent Image Cropping:</b> Circular cropping to isolate the retinal region and remove irrelevant black borders.</li>
+        <li><b>Resizing:</b> All images resized to model-specific input sizes (224×224 for CNN/ResNet50, 300×300 for EfficientNet-B3).</li>
+        <li><b>Data Augmentation:</b> Random horizontal/vertical flips, rotations up to 30°, and color jittering (brightness, contrast, saturation, hue) to improve generalization and reduce overfitting.</li>
+        <li><b>Normalization:</b> Pixel values normalized using ImageNet mean ([0.485, 0.456, 0.406]) and standard deviation ([0.229, 0.224, 0.225]) to stabilize training with pretrained models.</li>
+        <li><b>Class Weight Balancing:</b> Computed balanced class weights using sklearn's <code>compute_class_weight</code> and applied them to the cross-entropy loss to address dataset imbalance across severity grades.</li>
+    </ul>
+
+    <h3>Model 1: Custom CNN (Baseline)</h3>
+    <p>
+        The baseline CNN consists of three convolutional blocks with 32, 64, and 128 filters, respectively, each followed by ReLU activation and 2×2 max pooling. These are connected to fully-connected layers (512 units with 50% dropout) that output predictions across five severity classes. This architecture was chosen as a simple baseline to establish performance benchmarks before applying transfer learning.
+    </p>
+
+    <h3>Model 2: ResNet50 (Transfer Learning)</h3>
+    <p>
+        To leverage pretrained features from large-scale image classification, we fine-tuned a ResNet50 model initialized with ImageNet weights. The final fully-connected layer was replaced with a new linear layer mapping to five DR severity classes. To balance feature reuse and task-specific adaptation, we froze earlier layers and only trained <code>layer4</code> and the classification head. Training used Adam optimizer with learning rate scheduling (ReduceLROnPlateau monitoring validation kappa), running for 40 epochs with checkpointing on the best model.
+    </p>
+
+    <h3>Model 3: EfficientNet-B3 (Transfer Learning)</h3>
+    <p>
+        EfficientNet uses compound scaling to balance network depth, width, and resolution for optimal efficiency. We fine-tuned an EfficientNet-B3 model initialized with ImageNet weights, replacing the final classifier with a linear layer for five-class DR classification. The model uses 300×300 input resolution (native to EfficientNet-B3) and was trained with Adam optimizer, ReduceLROnPlateau scheduling, mixed-precision training (FP16), and class-weighted cross-entropy loss for 15 epochs. EfficientNet-B3 was selected for its strong accuracy-to-parameter ratio, offering competitive performance with fewer computational resources.
+    </p>
+
+    <h3>Why These Models?</h3>
+    <p>
+        This supervised learning approach was chosen because CNNs automatically learn spatial hierarchies of features from raw pixel data, making them well-suited for medical imaging tasks where manual feature extraction is limited. The custom CNN establishes a baseline to quantify the benefit of transfer learning. ResNet50 and EfficientNet-B3 exploit pretrained representations from millions of natural images, accelerating convergence and improving generalization on our smaller medical dataset. Comparing these architectures reveals tradeoffs between model complexity, training efficiency, and classification performance.
+    </p>
+
+    <h2>Results and Discussion</h2>
+
+    <h3>Visualizations</h3>
+    <figure>
+        <img src="assets/model_learning_progression.png" alt="Training and validation accuracy and loss curves over 15 epochs with an early-epoch checkpoint indicator." style="width: 100%; max-width: 720px;">
+        <figcaption>Figure 1: Custom CNN learning progression across 15 epochs, showing training/validation accuracy and loss curves. Best checkpoint at epoch 3.</figcaption>
+    </figure>
+    <figure>
+        <img src="assets/validation_confusion_matrix.png" alt="Validation confusion matrix across the five diabetic retinopathy severity grades." style="width: 100%; max-width: 520px;">
+        <figcaption>Figure 2: Custom CNN confusion matrix revealing heavy bias toward Class 0, correctly identifying most healthy cases but frequently misclassifying disease severity levels.</figcaption>
+    </figure>
+
+    <h3>Model 1: Custom CNN (Baseline) Analysis</h3>
+    <p>
+        The custom CNN was trained for 15 epochs with class-balanced cross entropy and on-the-fly augmentations. The model achieved its best checkpoint at epoch 3, where validation performance stabilized after rapid early gains.
+    </p>
+    <ul>
+        <li><b>Cohen's Kappa:</b> 0.546 at epoch 3, reflecting moderate agreement with clinician labels.</li>
+        <li><b>Validation Accuracy:</b> 48.0%, with <b>Balanced Accuracy</b> of 37.6%, highlighting sensitivity gaps for minority classes.</li>
+        <li><b>Macro F1-score:</b> 0.32 and <b>Weighted F1-score:</b> 0.49, indicating class imbalance depresses overall performance.</li>
+        <li><b>Class 0 Metrics:</b> Precision 0.94, recall 0.83, F1 0.88—contrasting with recall of 0.35, 0.02, 0.35, and 0.33 for Classes 1–4.</li>
+    </ul>
+    <p>
+        <b>Strengths:</b> Simple architecture, fast training (~15 epochs), effectively distinguishes healthy (Class 0) from diseased images.<br>
+        <b>Limitations:</b> Limited capacity prevents learning subtle inter-class differences; early plateau suggests the model reached its representational ceiling. Heavy Class 0 bias causes poor recall on minority severity grades critical for clinical triage.
+    </p>
+
+    <h3>Model 2: ResNet50 Analysis</h3>
+    <figure>
+        <img src="assets/resnet50_train_history.png" alt="ResNet50 training and validation accuracy and loss curves over 40 epochs." style="width: 100%; max-width: 720px;">
+        <figcaption>Figure 3: ResNet50 learning progression across 40 epochs. Training accuracy reaches ~88% while validation accuracy stabilizes around 80%. Best checkpoint at epoch 9.</figcaption>
+    </figure>
+    <figure>
+        <img src="assets/resnet50_confusion_matrix.png" alt="ResNet50 validation confusion matrix." style="width: 100%; max-width: 520px;">
+        <figcaption>Figure 4: ResNet50 confusion matrix showing improved classification across all severity grades, with strong diagonal values indicating better multi-class discrimination than the baseline CNN.</figcaption>
+    </figure>
+    <p>
+        Fine-tuning a pretrained ResNet50 for 40 epochs dramatically improved performance across all metrics:
+    </p>
+    <ul>
+        <li><b>Cohen's Kappa:</b> <b>0.887</b> at epoch 9 (best checkpoint)—62% relative improvement over baseline.</li>
+        <li><b>Validation Accuracy:</b> <b>79.8%</b>, up from 48%.</li>
+        <li><b>Balanced Accuracy:</b> <b>65.6%</b>, nearly doubling the baseline's 37.6%.</li>
+        <li><b>Macro F1-score:</b> <b>0.65</b>, more than double the baseline's 0.32.</li>
+        <li><b>Training Accuracy:</b> Peaked at 88.5% with training kappa reaching 0.93.</li>
+    </ul>
+    <p>
+        The confusion matrix reveals substantially improved multi-class performance: Class 0 (No DR) achieves near-perfect classification (337/342), while intermediate classes show meaningful diagonal concentration. Class 2 (Moderate DR) correctly classifies 137/198 samples—a major improvement over the baseline's near-zero recall. Class 4 (Proliferative) reaches 39/64 correct predictions, demonstrating the model's ability to detect severe cases critical for clinical triage.
+    </p>
+    <p>
+        <b>Strengths:</b> Pretrained ImageNet features provide strong foundations for extracting clinically relevant patterns (microaneurysms, hemorrhages, exudates). Freezing early layers prevents overfitting while fine-tuning <code>layer4</code> adapts to DR-specific features. Strong Cohen's Kappa indicates excellent agreement with clinician labels.<br>
+        <b>Limitations:</b> Larger model size (~25M parameters) increases inference time. Validation loss slightly increased in later epochs, indicating mild overfitting despite checkpointing.
+    </p>
+
+    <h3>Model 3: EfficientNet-B3 Analysis</h3>
+    <figure>
+        <img src="assets/efficientnet_train_history.png" alt="EfficientNet-B3 training and validation accuracy and loss curves over 15 epochs." style="width: 100%; max-width: 720px;">
+        <figcaption>Figure 5: EfficientNet-B3 learning progression across 15 epochs. Training and validation accuracy converge closely, with best checkpoint at epoch 14.</figcaption>
+    </figure>
+    <figure>
+        <img src="assets/efficientnet_confusion_matrix.png" alt="EfficientNet-B3 validation confusion matrix." style="width: 100%; max-width: 520px;">
+        <figcaption>Figure 6: EfficientNet-B3 confusion matrix showing strong multi-class performance with improved recall across all severity grades.</figcaption>
+    </figure>
+    <p>
+        EfficientNet-B3 was fine-tuned for 15 epochs using ImageNet pretrained weights and mixed-precision training:
+    </p>
+    <ul>
+        <li><b>Cohen's Kappa:</b> <b>0.909</b> at epoch 14 (best checkpoint)—the highest among all models.</li>
+        <li><b>Validation Accuracy:</b> <b>82.5%</b>, the best overall accuracy.</li>
+        <li><b>Balanced Accuracy:</b> <b>73.1%</b>, substantially outperforming both baseline and ResNet50.</li>
+        <li><b>Macro F1-score:</b> <b>0.71</b>, with <b>Weighted F1-score:</b> <b>0.83</b>.</li>
+        <li><b>Macro Precision:</b> <b>0.71</b> and <b>Macro Recall:</b> <b>0.73</b>.</li>
+        <li><b>Per-class F1:</b> Class 0: 0.98, Class 1: 0.70, Class 2: 0.75, Class 3: 0.47, Class 4: 0.66.</li>
+    </ul>
+    <p>
+        The classification report reveals excellent performance across severity grades: Class 0 (No DR) achieves near-perfect metrics (precision 0.99, recall 0.98, F1 0.98), Class 1 (Mild) shows balanced precision/recall of 0.70/0.71, and Class 2 (Moderate) reaches F1 of 0.75. Even challenging minority classes show meaningful improvement—Class 3 (Severe) achieves recall of 0.65 despite having only 37 samples, and Class 4 (Proliferative) reaches F1 of 0.66.
+    </p>
+    <p>
+        <b>Strengths:</b> Compound scaling provides excellent accuracy-to-parameter efficiency (~12M parameters vs ResNet50's ~25M). Achieves the best Cohen's Kappa (0.909) and balanced accuracy (73.1%) among all models. Mixed-precision training enables faster training with lower memory usage. Strong per-class recall makes it highly suitable for clinical screening where missing severe cases is costly.<br>
+        <b>Limitations:</b> Class 3 (Severe DR) remains the most challenging with F1 of 0.47, likely due to its small sample size (37 samples) and visual similarity to adjacent classes.
+    </p>
+
+    <h3>Model Comparison</h3>
+    <table style="width: 100%; border-collapse: collapse; margin: 20px 0; border: 1px solid #e1e4e8;">
+        <thead>
+            <tr style="background-color: #f6f8fa;">
+                <th style="border: 1px solid #e1e4e8; padding: 12px; text-align: left;">Model</th>
+                <th style="border: 1px solid #e1e4e8; padding: 12px; text-align: center;">Val Accuracy</th>
+                <th style="border: 1px solid #e1e4e8; padding: 12px; text-align: center;">Balanced Acc</th>
+                <th style="border: 1px solid #e1e4e8; padding: 12px; text-align: center;">Cohen's Kappa</th>
+                <th style="border: 1px solid #e1e4e8; padding: 12px; text-align: center;">Macro F1</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td style="border: 1px solid #e1e4e8; padding: 12px;">Custom CNN</td>
+                <td style="border: 1px solid #e1e4e8; padding: 12px; text-align: center;">48.0%</td>
+                <td style="border: 1px solid #e1e4e8; padding: 12px; text-align: center;">37.6%</td>
+                <td style="border: 1px solid #e1e4e8; padding: 12px; text-align: center;">0.546</td>
+                <td style="border: 1px solid #e1e4e8; padding: 12px; text-align: center;">0.32</td>
+            </tr>
+            <tr style="background-color: #f9f9f9;">
+                <td style="border: 1px solid #e1e4e8; padding: 12px;">ResNet50</td>
+                <td style="border: 1px solid #e1e4e8; padding: 12px; text-align: center;">79.8%</td>
+                <td style="border: 1px solid #e1e4e8; padding: 12px; text-align: center;">65.6%</td>
+                <td style="border: 1px solid #e1e4e8; padding: 12px; text-align: center;">0.887</td>
+                <td style="border: 1px solid #e1e4e8; padding: 12px; text-align: center;">0.65</td>
+            </tr>
+            <tr>
+                <td style="border: 1px solid #e1e4e8; padding: 12px; font-weight: 500;">EfficientNet-B3</td>
+                <td style="border: 1px solid #e1e4e8; padding: 12px; text-align: center; font-weight: 500;">82.5%</td>
+                <td style="border: 1px solid #e1e4e8; padding: 12px; text-align: center; font-weight: 500;">73.1%</td>
+                <td style="border: 1px solid #e1e4e8; padding: 12px; text-align: center; font-weight: 500;">0.909</td>
+                <td style="border: 1px solid #e1e4e8; padding: 12px; text-align: center; font-weight: 500;">0.71</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>Tradeoffs, Strengths, and Limitations</h3>
+    <p>
+        <b>Custom CNN vs Transfer Learning:</b> The baseline CNN is lightweight and trains quickly but lacks the representational power to distinguish subtle severity differences. Transfer learning models (ResNet50, EfficientNet-B3) leverage pretrained features, dramatically improving balanced accuracy—critical for detecting minority severe cases.
+    </p>
+    <p>
+        <b>ResNet50 vs EfficientNet-B3:</b> EfficientNet-B3 achieves the best overall performance with 82.5% validation accuracy, 0.909 Cohen's Kappa, and 73.1% balanced accuracy, while using approximately half the parameters of ResNet50 (~12M vs ~25M). This demonstrates EfficientNet's compound scaling advantage—achieving superior accuracy with greater computational efficiency. EfficientNet-B3 also trained in fewer epochs (15 vs 40) due to its native image resolution optimization and mixed-precision training.
+    </p>
+    <p>
+        <b>Class Imbalance Challenge:</b> All models struggle most with Class 3 (Severe DR), which has only 37 samples and subtle visual differences from adjacent classes. EfficientNet-B3's macro recall of 73% represents significant improvement over the baseline's 37.6%, but further gains may require targeted augmentation or oversampling strategies.
+    </p>
+    <p>
+        <b>Clinical Relevance:</b> EfficientNet-B3's Cohen's Kappa of 0.909 indicates "almost perfect" agreement with clinician labels per standard interpretation guidelines. The combination of high accuracy (82.5%), strong per-class recall (particularly 0.98 for healthy cases and 0.59 for proliferative DR), and computational efficiency makes it suitable for deployment in resource-constrained settings like mobile clinics and pharmacies.
+    </p>
+
+    <h3>Next Steps</h3>
+    <p>
+        Potential future improvements include: (1) applying focal loss to further emphasize hard-to-classify minority samples (especially Class 3), (2) implementing Grad-CAM visualizations to validate that model attention focuses on clinically relevant regions (hemorrhages, exudates, microaneurysms), (3) exploring ensemble methods combining ResNet50 and EfficientNet-B3 predictions, (4) testing EfficientNet-B4 for potentially higher accuracy, and (5) validating on external datasets to assess generalization beyond APTOS 2019.
+    </p>
+
+    <h2>Project Timeline (Gantt Chart)</h2>
+    <p>
+        Below is our project timeline showing the planned schedule for each phase of the project:
+    </p>
+    
+    <!-- Embedded Google Sheets Gantt Chart -->
+    <div style="margin: 20px 0; border: 1px solid #e1e4e8; border-radius: 6px; overflow: hidden;">
+        <iframe 
+            src="https://docs.google.com/spreadsheets/d/1KPTIG5Eog6dTnkBuKRSnz2rmSPyqjoNB/edit?usp=sharing&widget=true&headers=false" 
+            width="100%" 
+            height="600" 
+            frameborder="0"
+            style="border: none;">
+        </iframe>
+    </div>
+    
+    <p>
+        <a href="https://docs.google.com/spreadsheets/d/1KPTIG5Eog6dTnkBuKRSnz2rmSPyqjoNB/edit?usp=sharing&ouid=107093138516708134714&rtpof=true&sd=true" 
+           target="_blank" 
+           style="display: inline-block; background-color: #0366d6; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin: 10px 0;">
+           📊 Open in Google Sheets
+        </a>
+    </p>
+    <p>
+        <em>Note: The chart above shows our project timeline. Click "Open in Google Sheets" to view the full interactive version.</em>
+    </p>
+
+    <h2>Team Contributions</h2>
+    <table style="width: 100%; border-collapse: collapse; margin: 20px 0; border: 1px solid #e1e4e8;">
+        <thead>
+            <tr style="background-color: #f6f8fa;">
+                <th style="border: 1px solid #e1e4e8; padding: 12px; text-align: left; font-weight: 600;">Name</th>
+                <th style="border: 1px solid #e1e4e8; padding: 12px; text-align: left; font-weight: 600;">Contributions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td style="border: 1px solid #e1e4e8; padding: 12px; font-weight: 500;">Adil</td>
+                <td style="border: 1px solid #e1e4e8; padding: 12px;">Built the Custom CNN and ResNet50 models, set up the training pipeline.</td>
+            </tr>
+            <tr style="background-color: #f9f9f9;">
+                <td style="border: 1px solid #e1e4e8; padding: 12px; font-weight: 500;">Dat</td>
+                <td style="border: 1px solid #e1e4e8; padding: 12px;">Trained and tuned the Custom CNN and ResNet50 models, collected results.</td>
+            </tr>
+            <tr>
+                <td style="border: 1px solid #e1e4e8; padding: 12px; font-weight: 500;">Jay</td>
+                <td style="border: 1px solid #e1e4e8; padding: 12px;">Ran experiments for the Custom CNN and ResNet50, validated outputs.</td>
+            </tr>
+            <tr style="background-color: #f9f9f9;">
+                <td style="border: 1px solid #e1e4e8; padding: 12px; font-weight: 500;">Sohil</td>
+                <td style="border: 1px solid #e1e4e8; padding: 12px;">Implemented EfficientNet-B3, conducted literature review, helped write the report.</td>
+            </tr>
+            <tr>
+                <td style="border: 1px solid #e1e4e8; padding: 12px; font-weight: 500;">Vihaan</td>
+                <td style="border: 1px solid #e1e4e8; padding: 12px;">Implemented EfficientNet-B3, wrote the report, prepared GitHub Pages submission.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>References</h2>
+    <p>
+        [1] V. Gulshan et al., "Development and Validation of a Deep Learning Algorithm for Detection of Diabetic Retinopathy in Retinal Fundus Photographs," JAMA, vol. 316, no. 22, pp. 2402-2410, Dec. 2016, doi: 10.1001/jama.2016.17216.
+    </p>
+    <p>
+        [2] T. M. Asyraf, M. Y. Mashor, H. Rosline, and H. A. Nugroho, "A review on the automated detection of diabetic retinopathy," Jurnal Teknologi, vol. 77, no. 26, pp. 111-118, 2015.
+    </p>
+    <p>
+        [3] Q. Abbas, Y. Daadaa, U. Rashid, M. Z. Sajid, and M. E. A. Ibrahim, "HDR-EfficientNet: A Classification of Hypertensive and Diabetic Retinopathy Using Optimize EfficientNet Architecture," Diagnostics, vol. 13, no. 20, p. 3236, 2023. doi: 10.3390/diagnostics13203236.
+    </p>
+
+</body>
+</html>
+
