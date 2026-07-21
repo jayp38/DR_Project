@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Group 82 Project Proposal</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+            line-height: 1.6;
+            margin: 0 auto;
+            max-width: 800px;
+            padding: 2em;
+            color: #333;
+        }
+        h1, h2, h3 {
+            border-bottom: 1px solid #eaecef;
+            padding-bottom: 0.3em;
+            margin-top: 24px;
+            margin-bottom: 16px;
+        }
+        h1 {
+            text-align: center;
+            border-bottom: none;
+            font-size: 2.5em;
+        }
+        h2 {
+            font-size: 1.75em;
+        }
+        h3 {
+            font-size: 1.4em;
+        }
+        a {
+            color: #0366d6;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        ul {
+            padding-left: 20px;
+        }
+        li {
+            margin-bottom: 8px;
+        }
+        code {
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+            background-color: rgba(27,31,35,0.05);
+            padding: .2em .4em;
+            margin: 0;
+            font-size: 85%;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Group 82 Project Proposal</h1>
+
+    <h2>Introduction/Background</h2>
+    <p>
+        Patients with diabetes may develop diabetic retinopathy (DR), where retinal blood vessels are damaged, potentially causing permanent blindness. Retinal fundus images are scored into five order stages for screening: 0-4 (No DR, Mild, Moderate, Severe, Proliferative). Manual scoring is slow, expensive and inconsistently available, especially in low-resource settings[2]. 
+    </p>
+    <p>
+        Automated DR detection has evolved from hand-crafted features to deep learning[2]. Today, transfer learning with CNNs like ResNet provides human-level accuracy[1]. Current work pushes efficiency with models such as EfficientNet and explores next-generation architectures like Vision Transformers[3].
+    </p>
+
+    <h3>Dataset</h3>
+    <p>
+        <b>Dataset Link:</b> <a href="https://www.kaggle.com/competitions/aptos2019-blindness-detection/data" target="_blank" rel="noopener noreferrer">https://www.kaggle.com/competitions/aptos2019-blindness-detection/data</a>
+    </p>
+    <p>
+        We plan to use APTOS 2019 Blindness Detection Dataset, which contains over 3,500 high-resolution retinal fundus images. Each image was assessed by a clinician and assigned an integer label from 0 to 4, relative to the aforementioned five stages of DR severity. It is representative of real-world data given that there is a significant class imbalance (significantly more healthy images than diseased ones) and a wide range of quality in the images (variations in lighting, focus, and artifacts)[3].
+    </p>
+    
+    <h2>Problem Definition</h2>
+    <p>
+        Diabetic Retinopathy is one of the leading causes of vision loss in adults between the ages of 18 and 65 worldwide, but fortunately, it is largely preventable if and only if detected early[1]. The current way patients are diagnosed is by a trained ophthalmologist manually examining retinal images, a process that creates a significant bottleneck. As such, DR screening is restricted by inefficiency and lack of access. Several patients are unable to attend annual exams due to cost or a shortage of ophthalmologists, which can impede diagnosis and increase cases of preventable blindness[2].
+    </p>
+
+    <h2>Motivation</h2>
+    <p>
+        We want to build a cost-effective, reliable, and scalable ML pipeline for early DR triage that can: 
+    </p>
+    <ul>
+        <li><b>Increase Accessibility:</b> The system can be deployed in pharmacies, clinics, or mobile health units, enabling patient screening without the need of specialists.</li>
+        <li><b>Improve Speed:</b> The system can analyze an image and provide a risk assessment, allowing for immediate feedback and referral if needed.</li>
+        <li><b>Boost Efficiency:</b> Since the system can automatically identify healthy eyes or flag high-risk cases, it allows ophthalmologists to focus their limited time and expertise on patients who need them most[1].</li>
+    </ul>
+
+    <h2>Methods</h2>
+    <p>
+        Our approach is going to be centered around supervised learning via Convolutional Neural Networks (CNNs). We will evaluate multiple models that can be used after putting our data through a standardized preprocessing pipeline.
+    </p>
+
+    <h3>Data Preprocessing</h3>
+    <p>
+        We plan to follow the following procedure: 
+    </p>
+    <ul>
+        <li><b>Standardization:</b> All the data (images) will be resized uniformly, and all pixel values will be normalized (0, 1) to make sure that the training is done properly.</li>
+        <li><b>Data Augmentation:</b> Data will experience multiple transformations (rotations, flips, grayscale, etc.) to prevent model overfitting and improve model generalization.</li>
+        <li><b>Data/Image Enhancement (TBD):</b> Apply circular crop to the images for black border removal + Contrast Limited Adaptive Histogram Equalization (CLAHE) applied for augmented visibility of features such as microaneurysms and hemorrhages[3].</li>
+    </ul>
+
+    <h3>Modeling Approach</h3>
+    <p>
+        We are planning to compare a series of models to evaluate which works best for this specific use case:
+    </p>
+    <ul>
+        <li><b>Custom CNN:</b> We plan to build a base CNN using TensorFlow and Keras, and this model will likely have 3-4 convolutional layers. This will serve as the benchmark based on which the other modeling techniques will be compared to.</li>
+        <li><b>Transfer Learning with ResNet50:</b> We plan to fine-tune a pre-trained ResNet50 model (ImageNet), enabling us to replace the final layer and train it on our dataset. This could prove beneficial since we can leverage the pre-trained feature extraction (essential for medical imaging)[1].</li>
+        <li><b>Advanced Transfer Learning with EfficientNet:</b> Given that EfficientNet is a more modern architecture than ResNet, we plan to fine-tune an EfficientNet (TBD between B3 and B4) to test its computational efficiency and accuracy[3].</li>
+        <li><b>YOLO:</b> We plan to deploy/evaluate out-of-the-box classification models that Ultralytics offer. Given that YOLO models have differing architectures (CNN-based or Transformer-based), we will compare the balance that the different models have between predictive performance and key efficiency metrics.</li>
+    </ul>
+
+    <h2>Project Timeline (Gantt Chart)</h2>
+    <p>
+        Below is our project timeline showing the planned schedule for each phase of the project:
+    </p>
+    
+    <!-- Embedded Google Sheets Gantt Chart -->
+    <div style="margin: 20px 0; border: 1px solid #e1e4e8; border-radius: 6px; overflow: hidden;">
+        <iframe 
+            src="https://docs.google.com/spreadsheets/d/1KPTIG5Eog6dTnkBuKRSnz2rmSPyqjoNB/edit?usp=sharing&widget=true&headers=false" 
+            width="100%" 
+            height="600" 
+            frameborder="0"
+            style="border: none;">
+        </iframe>
+    </div>
+    
+    <p>
+        <a href="https://docs.google.com/spreadsheets/d/1KPTIG5Eog6dTnkBuKRSnz2rmSPyqjoNB/edit?usp=sharing&ouid=107093138516708134714&rtpof=true&sd=true" 
+           target="_blank" 
+           style="display: inline-block; background-color: #0366d6; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin: 10px 0;">
+           📊 Open in Google Sheets
+        </a>
+    </p>
+    <p>
+        <em>Note: The chart above shows our project timeline. Click "Open in Google Sheets" to view the full interactive version.</em>
+    </p>
+
+    <h2>(Potential) Results and Discussion</h2>
+    <p>
+        There are a number of metrics that we are going to be using:
+    </p>
+    <ul>
+        <li><b>Cohen's Kappa Score:</b> Will be our primary metric for the overall model performance given that it measures agreement beyond chance (makes it ideal for multi-class medical diagnosis)[1].</li>
+        <li><b>Confusion Matrix:</b> Visualization to analyze model's specific error patterns and will highlight where model improvement is needed.</li>
+        <li><b>Precision, Recall, F1-Score:</b> Will record performance per class, priority will be placed on recall to minimize false negatives (most dangerous in this context) and macro-averaged F1-score to ensure multi-class robust performance[2].</li>
+        <li><b>Balanced Accuracy Score:</b> Calculated as average recall per class, meaning that it prevents high accuracy from hiding poor performance on critical/severe classes (important because raw accuracy could be high but model might miss all positive diagnoses).</li>
+    </ul>
+
+    <h2>Team Contributions</h2>
+    <table style="width: 100%; border-collapse: collapse; margin: 20px 0; border: 1px solid #e1e4e8;">
+        <thead>
+            <tr style="background-color: #f6f8fa;">
+                <th style="border: 1px solid #e1e4e8; padding: 12px; text-align: left; font-weight: 600;">Name</th>
+                <th style="border: 1px solid #e1e4e8; padding: 12px; text-align: left; font-weight: 600;">Contributions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td style="border: 1px solid #e1e4e8; padding: 12px; font-weight: 500;">Dat</td>
+                <td style="border: 1px solid #e1e4e8; padding: 12px;">Led the development of presentation slides and coordinated video production and distribution</td>
+            </tr>
+            <tr style="background-color: #f9f9f9;">
+                <td style="border: 1px solid #e1e4e8; padding: 12px; font-weight: 500;">Jay</td>
+                <td style="border: 1px solid #e1e4e8; padding: 12px;">Collaborated on slide development and contributed to video production and filming</td>
+            </tr>
+            <tr>
+                <td style="border: 1px solid #e1e4e8; padding: 12px; font-weight: 500;">Syed</td>
+                <td style="border: 1px solid #e1e4e8; padding: 12px;">Led project conceptualization, dataset identification, and methodology development in collaboration with team members</td>
+            </tr>
+            <tr style="background-color: #f9f9f9;">
+                <td style="border: 1px solid #e1e4e8; padding: 12px; font-weight: 500;">Sohil</td>
+                <td style="border: 1px solid #e1e4e8; padding: 12px;">Conducted comprehensive literature review and managed academic citations and references</td>
+            </tr>
+            <tr>
+                <td style="border: 1px solid #e1e4e8; padding: 12px; font-weight: 500;">Vihaan</td>
+                <td style="border: 1px solid #e1e4e8; padding: 12px;">Developed and maintained the project repository and created the web-based project documentation</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>References</h2>
+    <p>
+        [1] V. Gulshan et al., "Development and Validation of a Deep Learning Algorithm for Detection of Diabetic Retinopathy in Retinal Fundus Photographs," JAMA, vol. 316, no. 22, pp. 2402-2410, Dec. 2016, doi: 10.1001/jama.2016.17216.
+    </p>
+    <p>
+        [2] T. M. Asyraf, M. Y. Mashor, H. Rosline, and H. A. Nugroho, "A review on the automated detection of diabetic retinopathy," Jurnal Teknologi, vol. 77, no. 26, pp. 111-118, 2015.
+    </p>
+    <p>
+        [3] Q. Abbas, Y. Daadaa, U. Rashid, M. Z. Sajid, and M. E. A. Ibrahim, "HDR-EfficientNet: A Classification of Hypertensive and Diabetic Retinopathy Using Optimize EfficientNet Architecture," Diagnostics, vol. 13, no. 20, p. 3236, 2023. doi: 10.3390/diagnostics13203236.
+    </p>
+
+</body>
+</html>
+
