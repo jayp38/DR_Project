@@ -1,0 +1,5 @@
+freeze_backbone: false
+lr: 0.001
+model_name: efficientnet_b3
+num_classes: 5
+pretrained: true
